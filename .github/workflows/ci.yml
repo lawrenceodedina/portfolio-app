@@ -10,8 +10,8 @@ jobs:
               uses: actions/checkout@v6
             - name: Build image
               run: |
-              docker build -t ${{ secrets.DOCKER_USERNAME }}/ciportfolio:${{ github.run_number }} .
-              docker build -t ${{ secrets.DOCKER_USERNAME }}/ciportfolio .
+                docker build -t ${{ secrets.DOCKER_USERNAME }}/ciportfolio:${{ github.run_number }} .
+                docker build -t ${{ secrets.DOCKER_USERNAME }}/ciportfolio .
             - name: Docker Login
               uses: docker/login-action@v4
               with:
@@ -19,6 +19,20 @@ jobs:
                 password: ${{ secrets.DOCKER_PASSWORD }}
             - name: push Image to registry
               run: |
-              docker push ${{ secrets.DOCKER_USERNAME }}/ciportfolio:${{ github.run_number }}
-              docker push ${{ secrets.DOCKER_USERNAME }}/ciportfolio
+                docker push ${{ secrets.DOCKER_USERNAME }}/ciportfolio:${{ github.run_number }}
+                docker push ${{ secrets.DOCKER_USERNAME }}/ciportfolio
+
+    Deploy:
+        needs: build
+        runs-on: ubuntu-latest
+        steps:
+            - name: SSH to linux and run container
+              uses: appleboy/ssh-action@v1
+              with:
+                host: ${{ secrets.HOST }}
+                username: ${{ secrets.SSH_USERNAME }}
+                key: ${{ secrets.PRIVATE_KEY }}
+                script: |
+                    docker rm -f portfolio || echo "Container not found skipping removal"
+                    docker run -d --name portfolio -p 8080:80 ${{ secrets.DOCKER_USERNAME }}/ciportfolio
     
